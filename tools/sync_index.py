@@ -42,7 +42,9 @@ def get(url,binary=False):
  return data if binary else data.decode("utf-8")
 
 def get_json(url): return json.loads(get(url))
-def dep_id(spec): return str(spec).split("@",1)[0]
+def dep_id(spec):
+ if isinstance(spec,dict): return spec.get("id")
+ return str(spec).split("@",1)[0]
 def cats(m):
  c=m.get("categories") or m.get("category") or ["OTHER"]
  if isinstance(c,str): c=[c]
@@ -106,9 +108,25 @@ for path in zips:
  else:
   old.setdefault("alternate_downloads",[]).append({"label":"Alternate build","name":Path(path).name,"url":url})
 
+if GENERATION=="gen2":
+ try:
+  official=get_json("https://raw.githubusercontent.com/FAFF0x/gen2recomp-mod-index/main/site/data/index.json")
+  byfile={}
+  for om in official.get("mods",[]):
+   fn=str(om.get("downloadURL") or "").rsplit("/",1)[-1]
+   if fn: byfile[fn]=om
+  for entry in mods.values():
+   om=byfile.get(entry.get("source_zip",""))
+   if not om: continue
+   for k in ("title","version","categories","summary","api","game_version","profile","permissions","dependencies","conflicts","experimental"):
+    if k in om: entry[k]=om[k]
+   entry["optional_dependencies"]=om.get("optional_dependencies") or []
+ except Exception as e:
+  fail.append(f"Could not load FAFF0x Gen 2 authoritative index: {e}")
+
 source_ids=set(mods)
-hard={dep_id(x) for m in mods.values() for x in m["dependencies"]}-source_ids
-opt={dep_id(x) for m in mods.values() for x in m["optional_dependencies"]}-source_ids
+hard={d for m in mods.values() for x in m["dependencies"] if (d:=dep_id(x))}-source_ids
+opt={d for m in mods.values() for x in m["optional_dependencies"] if (d:=dep_id(x))}-source_ids
 canonical={}
 try:
  c=get_json("https://raw.githubusercontent.com/bryanthaboi/gen1recomp-mod-index/main/site/data/index.json")
