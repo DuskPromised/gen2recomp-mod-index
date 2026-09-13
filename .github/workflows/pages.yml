@@ -33,3 +33,24 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Verify published index feed
+        run: |
+          url="${{ steps.deployment.outputs.page_url }}data/index.json"
+          echo "Checking $url"
+          for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            if curl -fsSL "$url" -o /tmp/index.json; then
+              python - <<'PY'
+          import json
+          with open("/tmp/index.json", "r", encoding="utf-8") as f:
+              d=json.load(f)
+          assert d.get("schema_version")==1
+          assert isinstance(d.get("mods"), list) and len(d["mods"]) > 0
+          print("public feed OK:", len(d["mods"]), "entries")
+          PY
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Published feed could not be fetched."
+          exit 1
