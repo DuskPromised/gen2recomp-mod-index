@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gen 2 Recomp Mod Index</title>
+<style>
+:root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#111827;background:#f8fafc}
+body{margin:0}.wrap{max-width:1450px;margin:auto;padding:28px}h1{margin:0 0 5px}.muted{color:#64748b}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}input,select{padding:10px 12px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;min-width:220px}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px;margin:12px 0}.head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.title{font-size:19px;font-weight:700}.meta{font-size:13px;color:#64748b}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
+@media(max-width:850px){.grid{grid-template-columns:1fr}}a{color:#2563eb;text-decoration:none}a:hover{text-decoration:underline}
+.badge{display:inline-block;padding:3px 7px;border-radius:999px;background:#e2e8f0;font-size:12px;margin:2px}.req{background:#fee2e2}.opt{background:#dbeafe}.soft{background:#ede9fe}.conf{background:#ffedd5}
+.scope{font-size:12px;padding:4px 8px;border-radius:999px;background:#f1f5f9}.links{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}
+code{background:#f1f5f9;padding:2px 5px;border-radius:5px;word-break:break-all}.alt{margin-top:8px;padding:8px;border-left:3px solid #94a3b8;background:#f8fafc}
+</style></head><body><div class="wrap">
+<h1>Gen 2 Recomp Mod Index</h1><div class="muted">FAFF0x/gen2recomp + verified referenced dependencies. Author-hosted downloads only; no ROMs or mirrored ZIPs.</div>
+<div class="toolbar"><input id="q" placeholder="Search mod, ID, ZIP…"><select id="rel"><option value="">All entries</option><option value="hard">Required dependencies</option><option value="optional">Optional dependencies</option><option value="soft">Documented integrations</option><option value="conflict">Conflicts</option></select></div>
+<div><strong id="count">0</strong> entries</div><div id="mods"></div></div>
+<script>
+const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const pills=(a,c)=>(a||[]).length?(a||[]).map(x=>`<span class="badge ${c}">${esc(x)}</span>`).join(""):'<span class="muted">None documented</span>';
+let feed={mods:[]};
+function render(){const q=document.querySelector("#q").value.toLowerCase(),r=document.querySelector("#rel").value;
+const mods=feed.mods.filter(m=>{const h=[m.title,m.id,m.author,m.summary,m.source_zip,...(m.tags||[])].join(" ").toLowerCase();if(q&&!h.includes(q))return false;
+if(r==="hard"&&!(m.dependencies||[]).length)return false;if(r==="optional"&&!(m.optional_dependencies||[]).length)return false;if(r==="soft"&&!(m.optional_integrations||[]).length)return false;if(r==="conflict"&&!(m.conflicts||[]).length)return false;return true;});
+document.querySelector("#count").textContent=mods.length;document.querySelector("#mods").innerHTML=mods.map(m=>`<article class="card"><div class="head"><div><div class="title">${esc(m.title)}</div><div class="meta"><code>${esc(m.id)}</code> · v${esc(m.version)} · ${esc(m.author)}</div></div><span class="scope">${esc(m.source_scope)}</span></div><p>${esc(m.summary||"")}</p>
+<div class="links"><a href="${esc(m.downloadURL)}">Download ZIP — ${esc(m.source_zip||"release asset")}</a>${m.repo?`<a href="${esc(m.repo)}">Source repository</a>`:""}</div>
+${(m.alternate_downloads||[]).map(a=>`<div class="alt"><strong>Alternate:</strong> <a href="${esc(a.url)}">${esc(a.name)}</a></div>`).join("")}
+<div class="grid"><div><strong>Required dependencies</strong><br>${pills(m.dependencies,"req")}<br><br><strong>Manifest-optional dependencies</strong><br>${pills(m.optional_dependencies,"opt")}</div>
+<div><strong>Documented optional integrations</strong><br>${pills(m.optional_integrations,"soft")}<br><br><strong>Conflicts</strong><br>${pills(m.conflicts,"conf")}</div></div>
+${m.game_version?`<div class="meta" style="margin-top:10px">Engine: <code>${esc(m.game_version)}</code></div>`:""}</article>`).join("")}
+document.addEventListener("input",e=>{if(e.target.id==="q"||e.target.id==="rel")render()});
+fetch("data/index.json",{cache:"no-store"}).then(r=>r.json()).then(j=>{feed=j;render()}).catch(e=>{document.querySelector("#mods").textContent="Feed has not been generated yet. Run the Sync Index workflow.";});
+</script></body></html>
