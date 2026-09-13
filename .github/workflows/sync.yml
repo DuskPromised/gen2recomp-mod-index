@@ -1,0 +1,45 @@
+name: Sync GenRecomp index
+on:
+  schedule:
+    - cron: "17 10 * * *"
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "tools/sync_index.py"
+      - ".github/workflows/sync.yml"
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Regenerate verified index
+        env:
+          SOURCE_REPO: FAFF0x/gen2recomp
+          GENERATION: gen2
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python tools/sync_index.py
+      - name: Validate generated feed
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open("site/data/index.json"))
+          assert d["schema_version"]==1
+          ids=[m["id"] for m in d["mods"]]
+          assert len(ids)==len(set(ids))
+          assert all(m.get("downloadURL","").startswith("https://") for m in d["mods"])
+          print("validated",len(ids),"entries")
+          PY
+      - name: Commit verified changes
+        run: |
+          git config user.name "genrecomp-index-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add site/data/index.json site/data/provenance.json VALIDATION.md
+          if git diff --cached --quiet; then
+            echo "Index already current."
+          else
+            git commit -m "Sync FAFF0x Gen 2 mod index"
+            git push
+          fi
