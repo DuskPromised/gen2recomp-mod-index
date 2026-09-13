@@ -1,4 +1,5 @@
 name: Deploy GitHub Pages
+# Publishes the current repository state, including site/data/index.json
 on:
   push:
     branches: ["main"]
