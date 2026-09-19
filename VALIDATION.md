@@ -2,7 +2,7 @@
 
 Source: FAFF0x/gen2recomp
 
-Commit: `5ab6bdd37c5cb6d15cf3dfa09c4f72d7225de722`
+Commit: `8123c644d087c72d25878e10306a4eee1b70d348`
 
 ZIPs inspected: **31**
 
